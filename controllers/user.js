@@ -34,7 +34,6 @@ const getUser = async (req, res,next) => {
         }
         res.json({ result })
     } catch (err) {
-        console.log(err.message)
         return next(new HttpError("Something went wrong!", 500))
     }
 }
