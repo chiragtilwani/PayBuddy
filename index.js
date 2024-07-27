@@ -1,15 +1,18 @@
-const mongoose = require('mongoose')
 const express = require('express')
 const app = express()
-PORT = 5000 || process.env.PORT
+const mongoose = require('mongoose')
+const dotenv=require('dotenv')
 
-mongoose.connect('mongodb+srv://chiragtilwani:Aneeval2004!@cluster0.b6v6mnb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 const userRoute = require('./routes/user')
-const HttpError = require('./models/HttpError')
+const HttpError = require('./utilities/HttpError')
+
+dotenv.config()
+PORT = 5000 || process.env.PORT
+mongoose.connect('mongodb+srv://chiragtilwani:Aneeval2004!@cluster0.b6v6mnb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 
 app.use(express.json())
 
-app.use('/api/user', userRoute)
+app.use('/api/v1/user', userRoute)
 
 
 app.use((req,res,next)=>{

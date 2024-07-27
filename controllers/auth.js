@@ -2,7 +2,7 @@ const User = require('../models/User')
 const bcrypt = require('bcrypt')
 
 const { getToken } = require("../utilities/helperFunctions")
-const HttpError = require('../models/HttpError')
+const HttpError = require('../utilities/HttpError')
 
 const register = async (req, res, next) => {
     const { name, username, password, email } = req.body
@@ -12,7 +12,7 @@ const register = async (req, res, next) => {
             return next(new HttpError('User with this email or username already exists!', 400))
         }
     }).catch(err => {
-        return next(new HttpError(err + 'something went wrong', 500))
+        return next(new HttpError('Something went wrong', 500))
     })
     if (username.includes(" ")) {
         return next(new HttpError('Username cannot contain white spaces!', 400))
@@ -22,7 +22,7 @@ const register = async (req, res, next) => {
 
     const newUser = await User.create({ name, username, email, password: hashedPassword })
 
-    res.json({ message: "Registeration Successful!", token: getToken(newUser._id, newUser.username) })
+    res.json({ message: "Registeration Successful!", token: getToken(newUser._id, newUser.username) }).status(202)
 }
 
 const login = async (req, res, next) => {
@@ -41,6 +41,6 @@ const login = async (req, res, next) => {
     if (!result) {
         return next(new HttpError("Wrong credentials!", 401))
     }
-    res.json({ message: "Login Successful!", token: getToken(existingUser._id, existingUser.username) })
+    res.json({ message: "Login Successful!", token: getToken(existingUser._id, existingUser.username) }).status(200)
 }
-module.exports = { register,login }
+module.exports = { register, login }

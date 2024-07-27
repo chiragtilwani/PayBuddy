@@ -1,5 +1,6 @@
 const zod = require('zod')
-const HttpError = require('../models/HttpError')
+const bcrypt = require('bcrypt')
+const HttpError = require('../utilities/HttpError')
 
 
 const userSignupSchema = zod.object({
@@ -11,17 +12,20 @@ const userSignupSchema = zod.object({
 const userLoginSchema = zod.object({
     usernameOrEmail: zod.string()
         .refine(value => {
-            // Email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            // Username validation: Ensure no whitespace and valid username format
             const usernameRegex = /^[a-zA-Z0-9_]+$/;
-            // Check if value is either a valid email or a valid username
             return emailRegex.test(value) || usernameRegex.test(value);
         }, {
             message: "Enter a valid email address or a username without whitespace.",
             path: ["usernameOrEmail"]
         }),
     password: zod.string().min(8, { message: 'password must contain at least 8 characters!' }),
+})
+
+const updateProfileSchema = zod.object({
+    name: zod.string().optional(),
+    username: zod.string().refine(data => !data.includes(" "), { message: "Username cannot contain whitespaces!", path: ["username"] }).optional(),
+    password: zod.string().min(8, { message: 'password must contain at least 8 characters!' }).optional(),
 })
 
 const authSignupInputMiddleware = (req, res, next) => {
@@ -40,4 +44,29 @@ const authLoginInputMiddleware = (req, res, next) => {
     next()
 }
 
-module.exports = { authSignupInputMiddleware, authLoginInputMiddleware }
+const updateProfileMiddleware = async (req, res, next) => {
+    const { name, username, password } = req.body
+    if (name && name === req.user.name) {
+        return next(new HttpError("Input is same as previous Name.", 400))
+    }
+
+    if (username && username === req.user.username) {
+        return next(new HttpError("Input is same as previous Username.", 400))
+    }
+
+    if (password) {
+        const passwordIsSame = await bcrypt.compare(password, req.user.password)
+        if (passwordIsSame) {
+            return next(new HttpError("Input is same as previous password.", 400))
+        }
+    }
+
+    const result = updateProfileSchema.safeParse(req.body)
+    if (!result.success) {
+        return next(new HttpError(result.error.errors[0].message, 400))
+    }
+
+    next()
+}
+
+module.exports = { authSignupInputMiddleware, authLoginInputMiddleware, updateProfileMiddleware }
