@@ -32,14 +32,31 @@ const getUser = async (req, res, next) => {
         if (!users.length) {
             return next(new HttpError("User not found", 404));
         }
-        res.json({ result:users.map(user=>({
-            name:user.name,
-            username:user.username,
-            email:user.email
-        })) })
+        res.json({
+            result: users.map(user => ({
+                name: user.name,
+                username: user.username,
+                email: user.email
+            }))
+        })
     } catch (err) {
         return next(new HttpError("Something went wrong!", 500))
     }
 }
 
-module.exports = { updateProfile, getUser }
+const getAllUsers = async (req, res, next) => {
+    try {
+        const users = await User.find()
+        res.json({
+            result: users.map(user => ({
+                name: user.name,
+                username: user.username,
+                email: user.email
+            }))
+        })
+    } catch (err) {
+        return next(new HttpError("Something went wrong!", 500))
+    }
+}
+
+module.exports = { updateProfile, getUser, getAllUsers }
