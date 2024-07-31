@@ -1,9 +1,10 @@
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
-const dotenv=require('dotenv')
+const dotenv = require('dotenv')
 
 const userRoute = require('./routes/user')
+const accountRoute = require('./routes/account')
 const HttpError = require('./utilities/HttpError')
 
 dotenv.config()
@@ -13,10 +14,11 @@ mongoose.connect('mongodb+srv://chiragtilwani:Aneeval2004!@cluster0.b6v6mnb.mong
 app.use(express.json())
 
 app.use('/api/v1/user', userRoute)
+app.use('/api/v1/account', accountRoute)
 
 
-app.use((req,res,next)=>{
-    return next(new HttpError('Could not find this route!',404))
+app.use((req, res, next) => {
+    return next(new HttpError('Could not find this route!', 404))
 })
 
 app.use((err, req, res, next) => {
