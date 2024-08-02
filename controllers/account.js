@@ -2,6 +2,7 @@ const mongoose = require("mongoose")
 const Account = require("../models/Account")
 const HttpError = require("../utilities/HttpError")
 const { sendNotification } = require("../utilities/helperFunctions")
+const Transaction = require("../models/Transaction")
 
 const getBalance = async (req, res, next) => {
     try {
@@ -31,6 +32,7 @@ const transfer = async (req, res, next) => {
 
     if (sendersAcc.balance < amount) {
         await session.abortTransaction()
+        await Transaction.create({ userId: req.user._id, participantId: receiverId, amount, status: 'failed', type: 'debit' })
         return next(new HttpError("Insufficient balance!", 400))
     }
 
@@ -45,6 +47,9 @@ const transfer = async (req, res, next) => {
     await Account.updateOne({ userId: receiverId }, { $inc: { balance: amount } }).session(session)
 
     await session.commitTransaction()
+    
+    await Transaction.create({ userId: req.user._id, participantId: receiverId, amount, status: 'completed', type: 'debit' })
+    await Transaction.create({ userId: receiverId, participantId: req.user._id, amount, status: 'completed', type: 'credit' })
     res.json({ message: "Transfer Successful" }).status(200)
 }
 
@@ -61,4 +66,16 @@ const requestMoney = async (req, res, next) => {
     res.json({ message: "Request Sent" }).status(200)
 }
 //if user approves the request, the amount will be transferred to the user who requested the money using transfer route
-module.exports = { getBalance, transfer, requestMoney }
+
+const getTransactions = async (req, res, next) => {
+    try {
+        const transactions = await Transaction.find({ userId: req.user._id }).sort({ createdAt: -1 })
+        if (transactions.length === 0) {
+            return next(new HttpError("No transactions found!", 404))
+        }
+        res.json({ transactions })
+    } catch (err) {
+        return next(new HttpError("Something went wrong!", 500))
+    }
+}
+module.exports = { getBalance, transfer, requestMoney, getTransactions }
